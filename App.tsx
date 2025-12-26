@@ -25,7 +25,9 @@ export default function App() {
   const [gameComplete, setGameComplete] = useState(false);
   
   const screenDimensions = Dimensions.get('window');
-  const boardSize = Math.min(screenDimensions.width, screenDimensions.height) * 0.8;
+  const headerHeight = 150; // Approximate height for title, difficulty, button, and timer
+  const availableHeight = screenDimensions.height - headerHeight;
+  const boardSize = Math.min(screenDimensions.width, availableHeight) * 0.8;
   const tileSize = boardSize / gameState.size.cols;
   
   const getDifficultySize = (diff: Difficulty) => {
@@ -104,10 +106,10 @@ export default function App() {
           <Picker.Item label="Normal (4x4)" value="normal" />
           <Picker.Item label="Hard (5x5)" value="hard" />
         </Picker>
-        <TouchableOpacity style={styles.startButton} onPress={startGame}>
-          <Text style={styles.startButtonText}>Start Game</Text>
-        </TouchableOpacity>
       </View>
+      <TouchableOpacity style={styles.startButton} onPress={startGame}>
+        <Text style={styles.startButtonText}>Start Game</Text>
+      </TouchableOpacity>
       <Text style={styles.timer}>Time: {formatTime(timer)} | Moves: {moves}</Text>
       <View style={[styles.gameBoard, { width: boardSize, height: boardSize }]}>
         {gameComplete ? (
@@ -173,6 +175,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
     color: '#333',
+    textAlign: 'center',
   },
   difficultyContainer: {
     flexDirection: 'row',
@@ -185,15 +188,15 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   picker: {
-    height: 50,
-    width: 150,
+    height: 60,
+    width: 200,
   },
   startButton: {
     backgroundColor: '#2196F3',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 5,
-    marginLeft: 10,
+    marginBottom: 10,
   },
   startButtonText: {
     color: 'white',
