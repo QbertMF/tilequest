@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TouchableOpacity, Image } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { createTileGame, moveTiles, shuffleTiles, isGameComplete } from './types/TileGame';
 import { useState, useEffect } from 'react';
@@ -23,7 +23,10 @@ export default function App() {
   const [moves, setMoves] = useState(0);
   const [gameActive, setGameActive] = useState(false);
   const [gameComplete, setGameComplete] = useState(false);
-  const tileSize = 60;
+  
+  const screenDimensions = Dimensions.get('window');
+  const boardSize = Math.min(screenDimensions.width, screenDimensions.height) * 0.8;
+  const tileSize = boardSize / gameState.size.cols;
   
   const getDifficultySize = (diff: Difficulty) => {
     switch (diff) {
@@ -101,12 +104,12 @@ export default function App() {
           <Picker.Item label="Normal (4x4)" value="normal" />
           <Picker.Item label="Hard (5x5)" value="hard" />
         </Picker>
+        <TouchableOpacity style={styles.startButton} onPress={startGame}>
+          <Text style={styles.startButtonText}>Start Game</Text>
+        </TouchableOpacity>
       </View>
-      <TouchableOpacity style={styles.startButton} onPress={startGame}>
-        <Text style={styles.startButtonText}>Start Game</Text>
-      </TouchableOpacity>
       <Text style={styles.timer}>Time: {formatTime(timer)} | Moves: {moves}</Text>
-      <View style={styles.gameBoard}>
+      <View style={[styles.gameBoard, { width: boardSize, height: boardSize }]}>
         {gameComplete ? (
           <Image
             source={gameState.selectedImage}
@@ -124,6 +127,8 @@ export default function App() {
                 {
                   left: tile.position.col * tileSize,
                   top: tile.position.row * tileSize,
+                  width: tileSize,
+                  height: tileSize,
                   backgroundColor: tile.value ? 'transparent' : '#f0f0f0'
                 }
               ]}
@@ -188,7 +193,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 5,
-    marginBottom: 10,
+    marginLeft: 10,
   },
   startButtonText: {
     color: 'white',
@@ -202,13 +207,9 @@ const styles = StyleSheet.create({
   },
   gameBoard: {
     position: 'relative',
-    width: 300,
-    height: 300,
   },
   tile: {
     position: 'absolute',
-    width: 60,
-    height: 60,
     borderWidth: 1,
     borderColor: '#ddd',
     overflow: 'hidden',
