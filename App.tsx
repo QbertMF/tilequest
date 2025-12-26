@@ -4,7 +4,7 @@ import { Picker } from '@react-native-picker/picker';
 import { createTileGame, moveTiles, shuffleTiles, isGameComplete } from './types/TileGame';
 import { useState, useEffect } from 'react';
 
-type Difficulty = 'easy' | 'normal' | 'hard';
+type Difficulty = 'easy' | 'normal' | 'hard' | 'ultra';
 
 const images = [
   require('./assets/truck1.png'),
@@ -35,6 +35,7 @@ export default function App() {
       case 'easy': return 3;
       case 'normal': return 4;
       case 'hard': return 5;
+      case 'ultra': return 6;
     }
   };
   
@@ -105,6 +106,7 @@ export default function App() {
           <Picker.Item label="Easy (3x3)" value="easy" />
           <Picker.Item label="Normal (4x4)" value="normal" />
           <Picker.Item label="Hard (5x5)" value="hard" />
+          <Picker.Item label="Ultra (6x6)" value="ultra" />
         </Picker>
       </View>
       <TouchableOpacity style={styles.startButton} onPress={startGame}>
@@ -151,7 +153,7 @@ export default function App() {
                       }
                     ]}
                   />
-                  <Text style={styles.tileNumber}>{tile.value}</Text>
+                  {difficulty !== 'ultra' && <Text style={styles.tileNumber}>{tile.value}</Text>}
                 </>
               )}
             </TouchableOpacity>
@@ -166,7 +168,7 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f3c677',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -174,7 +176,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 10,
-    color: '#333',
+    color: '#0c0a3e',
     textAlign: 'center',
   },
   difficultyContainer: {
@@ -185,14 +187,14 @@ const styles = StyleSheet.create({
   difficultyLabel: {
     fontSize: 16,
     marginRight: 10,
-    color: '#333',
+    color: '#0c0a3e',
   },
   picker: {
     height: 60,
     width: 200,
   },
   startButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: '#b33f62',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 5,
@@ -206,7 +208,7 @@ const styles = StyleSheet.create({
   timer: {
     fontSize: 18,
     marginBottom: 20,
-    color: '#666',
+    color: '#7b1e7a',
   },
   gameBoard: {
     position: 'relative',
@@ -214,7 +216,7 @@ const styles = StyleSheet.create({
   tile: {
     position: 'absolute',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#0c0a3e',
     overflow: 'hidden',
   },
   tileImage: {
@@ -227,7 +229,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
     color: 'white',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: '#f9564f',
     paddingHorizontal: 2,
     borderRadius: 2,
   },
