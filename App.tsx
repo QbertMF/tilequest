@@ -1,7 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, TouchableOpacity, Image } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { createTileGame, moveTiles, shuffleTiles } from './types/TileGame';
+import { createTileGame, moveTiles, shuffleTiles, isGameComplete } from './types/TileGame';
 import { useState, useEffect } from 'react';
 
 type Difficulty = 'easy' | 'normal' | 'hard';
@@ -22,6 +22,7 @@ export default function App() {
   const [gameStarted, setGameStarted] = useState(false);
   const [moves, setMoves] = useState(0);
   const [gameActive, setGameActive] = useState(false);
+  const [gameComplete, setGameComplete] = useState(false);
   const tileSize = 60;
   
   const getDifficultySize = (diff: Difficulty) => {
@@ -44,16 +45,16 @@ export default function App() {
   
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (gameStarted) {
+    if (gameStarted && !gameComplete) {
       interval = setInterval(() => {
         setTimer(prev => prev + 1);
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [gameStarted]);
+  }, [gameStarted, gameComplete]);
   
   const handleTileClick = (tileId: number) => {
-    if (!gameActive) return;
+    if (!gameActive || gameComplete) return;
     
     const newGameState = moveTiles(gameState, tileId);
     if (newGameState !== gameState) {
@@ -62,6 +63,12 @@ export default function App() {
       }
       setMoves(prev => prev + 1);
       setGameState(newGameState);
+      
+      if (isGameComplete(newGameState)) {
+        setGameComplete(true);
+        setGameActive(false);
+        setGameStarted(false);
+      }
     }
   };
   
@@ -71,6 +78,7 @@ export default function App() {
     setGameStarted(false);
     setMoves(0);
     setGameActive(true);
+    setGameComplete(false);
   };
   
   const formatTime = (seconds: number) => {
@@ -99,39 +107,49 @@ export default function App() {
       </TouchableOpacity>
       <Text style={styles.timer}>Time: {formatTime(timer)} | Moves: {moves}</Text>
       <View style={styles.gameBoard}>
-        {gameState.tiles.map(tile => (
-          <TouchableOpacity
-            key={tile.id}
-            style={[
-              styles.tile,
-              {
-                left: tile.position.col * tileSize,
-                top: tile.position.row * tileSize,
-                backgroundColor: tile.value ? 'transparent' : '#f0f0f0'
-              }
-            ]}
-            onPress={() => handleTileClick(tile.id)}
-            disabled={!tile.value || !gameActive}
-          >
-            {tile.value && (
-              <>
-                <Image
-                  source={gameState.selectedImage}
-                  style={[
-                    styles.tileImage,
-                    {
-                      left: -tile.originalPosition.col * tileSize,
-                      top: -tile.originalPosition.row * tileSize,
-                      width: gameState.size.cols * tileSize,
-                      height: gameState.size.rows * tileSize,
-                    }
-                  ]}
-                />
-                <Text style={styles.tileNumber}>{tile.value}</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        ))}
+        {gameComplete ? (
+          <Image
+            source={gameState.selectedImage}
+            style={{
+              width: gameState.size.cols * tileSize,
+              height: gameState.size.rows * tileSize,
+            }}
+          />
+        ) : (
+          gameState.tiles.map(tile => (
+            <TouchableOpacity
+              key={tile.id}
+              style={[
+                styles.tile,
+                {
+                  left: tile.position.col * tileSize,
+                  top: tile.position.row * tileSize,
+                  backgroundColor: tile.value ? 'transparent' : '#f0f0f0'
+                }
+              ]}
+              onPress={() => handleTileClick(tile.id)}
+              disabled={!tile.value || !gameActive}
+            >
+              {tile.value && (
+                <>
+                  <Image
+                    source={gameState.selectedImage}
+                    style={[
+                      styles.tileImage,
+                      {
+                        left: -tile.originalPosition.col * tileSize,
+                        top: -tile.originalPosition.row * tileSize,
+                        width: gameState.size.cols * tileSize,
+                        height: gameState.size.rows * tileSize,
+                      }
+                    ]}
+                  />
+                  <Text style={styles.tileNumber}>{tile.value}</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          ))
+        )}
       </View>
       <StatusBar style="auto" />
     </View>
@@ -186,6 +204,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     width: 300,
     height: 300,
+    alignSelf: 'center',
   },
   tile: {
     position: 'absolute',
