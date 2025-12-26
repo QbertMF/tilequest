@@ -1,14 +1,23 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Image } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { createTileGame, moveTiles, shuffleTiles } from './types/TileGame';
 import { useState, useEffect } from 'react';
 
 type Difficulty = 'easy' | 'normal' | 'hard';
 
+const images = [
+  require('./assets/truck1.png'),
+  require('./assets/truck2.png'),
+  require('./assets/truck3.png'),
+];
+
 export default function App() {
   const [difficulty, setDifficulty] = useState<Difficulty>('normal');
-  const [gameState, setGameState] = useState(() => createTileGame());
+  const [gameState, setGameState] = useState(() => {
+    const selectedImage = images[Math.floor(Math.random() * images.length)];
+    return createTileGame(4, 4, selectedImage);
+  });
   const [timer, setTimer] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
   const [moves, setMoves] = useState(0);
@@ -25,7 +34,8 @@ export default function App() {
   
   useEffect(() => {
     const size = getDifficultySize(difficulty);
-    setGameState(createTileGame(size, size));
+    const selectedImage = images[Math.floor(Math.random() * images.length)];
+    setGameState(createTileGame(size, size, selectedImage));
     setTimer(0);
     setGameStarted(false);
     setMoves(0);
@@ -97,13 +107,29 @@ export default function App() {
               {
                 left: tile.position.col * tileSize,
                 top: tile.position.row * tileSize,
-                backgroundColor: tile.value ? '#4CAF50' : 'transparent'
+                backgroundColor: tile.value ? 'transparent' : '#f0f0f0'
               }
             ]}
             onPress={() => handleTileClick(tile.id)}
             disabled={!tile.value || !gameActive}
           >
-            {tile.value && <Text style={styles.tileText}>{tile.value}</Text>}
+            {tile.value && (
+              <>
+                <Image
+                  source={gameState.selectedImage}
+                  style={[
+                    styles.tileImage,
+                    {
+                      left: -tile.originalPosition.col * tileSize,
+                      top: -tile.originalPosition.row * tileSize,
+                      width: gameState.size.cols * tileSize,
+                      height: gameState.size.rows * tileSize,
+                    }
+                  ]}
+                />
+                <Text style={styles.tileNumber}>{tile.value}</Text>
+              </>
+            )}
           </TouchableOpacity>
         ))}
       </View>
@@ -167,8 +193,21 @@ const styles = StyleSheet.create({
     height: 60,
     borderWidth: 1,
     borderColor: '#ddd',
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  tileImage: {
+    position: 'absolute',
+  },
+  tileNumber: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: 'white',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 2,
+    borderRadius: 2,
   },
   tileText: {
     fontSize: 18,

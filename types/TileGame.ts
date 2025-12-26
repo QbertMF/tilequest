@@ -2,15 +2,17 @@ export interface Tile {
   id: number;
   value: number | null; // null represents empty tile
   position: { row: number; col: number };
+  originalPosition: { row: number; col: number }; // for image cropping
 }
 
 export interface TileGameState {
   tiles: Tile[];
   size: { rows: number; cols: number };
   emptyTileId: number;
+  selectedImage: any;
 }
 
-export function createTileGame(rows: number = 5, cols: number = 5): TileGameState {
+export function createTileGame(rows: number = 5, cols: number = 5, selectedImage: any): TileGameState {
   const tiles: Tile[] = [];
   let id = 0;
   
@@ -20,7 +22,8 @@ export function createTileGame(rows: number = 5, cols: number = 5): TileGameStat
       tiles.push({
         id: id++,
         value: isEmptyTile ? null : id,
-        position: { row, col }
+        position: { row, col },
+        originalPosition: { row, col }
       });
     }
   }
@@ -28,7 +31,8 @@ export function createTileGame(rows: number = 5, cols: number = 5): TileGameStat
   return {
     tiles,
     size: { rows, cols },
-    emptyTileId: tiles.find(tile => tile.value === null)!.id
+    emptyTileId: tiles.find(tile => tile.value === null)!.id,
+    selectedImage
   };
 }
 
@@ -102,5 +106,5 @@ export function shuffleTiles(gameState: TileGameState): TileGameState {
     tile.position = availablePositions[index];
   });
   
-  return { ...gameState, tiles: newTiles };
+  return { ...gameState, tiles: newTiles, selectedImage: gameState.selectedImage };
 }
