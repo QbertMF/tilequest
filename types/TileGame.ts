@@ -80,3 +80,27 @@ export function moveTiles(gameState: TileGameState, clickedTileId: number): Tile
   
   return { ...gameState, tiles: newTiles };
 }
+
+export function shuffleTiles(gameState: TileGameState): TileGameState {
+  const newTiles = [...gameState.tiles];
+  const nonEmptyTiles = newTiles.filter(t => t.value !== null);
+  const emptyTile = newTiles.find(t => t.value === null)!;
+  
+  // Get all positions except empty tile position
+  const availablePositions = newTiles
+    .filter(t => t.value !== null)
+    .map(t => ({ ...t.position }));
+  
+  // Shuffle positions
+  for (let i = availablePositions.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [availablePositions[i], availablePositions[j]] = [availablePositions[j], availablePositions[i]];
+  }
+  
+  // Assign shuffled positions to non-empty tiles
+  nonEmptyTiles.forEach((tile, index) => {
+    tile.position = availablePositions[index];
+  });
+  
+  return { ...gameState, tiles: newTiles };
+}
