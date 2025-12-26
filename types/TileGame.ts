@@ -16,7 +16,7 @@ export function createTileGame(rows: number = 5, cols: number = 5): TileGameStat
   
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
-      const isEmptyTile = row === 0 && col === 0; // top right corner
+      const isEmptyTile = row === 0 && col === 0; // top left corner
       tiles.push({
         id: id++,
         value: isEmptyTile ? null : id,
@@ -47,27 +47,29 @@ export function moveTiles(gameState: TileGameState, clickedTileId: number): Tile
   const clickedPosition = { ...clickedTile.position };
   
   if (sameRow) {
-    const minCol = Math.min(clickedTile.position.col, emptyTile.position.col);
-    const maxCol = Math.max(clickedTile.position.col, emptyTile.position.col);
+    const tilesToMove = newTiles.filter(t => 
+      t.position.row === clickedTile.position.row &&
+      t.value !== null &&
+      ((clickedTile.position.col < emptyTile.position.col && t.position.col >= clickedTile.position.col && t.position.col < emptyTile.position.col) ||
+       (clickedTile.position.col > emptyTile.position.col && t.position.col <= clickedTile.position.col && t.position.col > emptyTile.position.col))
+    );
+    
     const direction = clickedTile.position.col < emptyTile.position.col ? 1 : -1;
-    
-    for (let col = minCol; col <= maxCol; col++) {
-      const tile = newTiles.find(t => t.position.row === clickedTile.position.row && t.position.col === col);
-      if (tile) {
-        tile.position.col += direction;
-      }
-    }
+    tilesToMove.forEach(tile => {
+      tile.position.col += direction;
+    });
   } else {
-    const minRow = Math.min(clickedTile.position.row, emptyTile.position.row);
-    const maxRow = Math.max(clickedTile.position.row, emptyTile.position.row);
-    const direction = clickedTile.position.row < emptyTile.position.row ? 1 : -1;
+    const tilesToMove = newTiles.filter(t => 
+      t.position.col === clickedTile.position.col &&
+      t.value !== null &&
+      ((clickedTile.position.row < emptyTile.position.row && t.position.row >= clickedTile.position.row && t.position.row < emptyTile.position.row) ||
+       (clickedTile.position.row > emptyTile.position.row && t.position.row <= clickedTile.position.row && t.position.row > emptyTile.position.row))
+    );
     
-    for (let row = minRow; row <= maxRow; row++) {
-      const tile = newTiles.find(t => t.position.row === row && t.position.col === clickedTile.position.col);
-      if (tile) {
-        tile.position.row += direction;
-      }
-    }
+    const direction = clickedTile.position.row < emptyTile.position.row ? 1 : -1;
+    tilesToMove.forEach(tile => {
+      tile.position.row += direction;
+    });
   }
   
   // Make clicked tile position empty
