@@ -204,7 +204,6 @@ const styles = StyleSheet.create({
     position: 'relative',
     width: 300,
     height: 300,
-    alignSelf: 'center',
   },
   tile: {
     position: 'absolute',
