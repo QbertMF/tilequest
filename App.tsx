@@ -1,4 +1,9 @@
 import { StatusBar } from 'expo-status-bar';
+import { StyleSheet, Text, View, TouchableOpacity, Image, Dimensions, Modal, TextInput, ScrollView, Alert } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
+import { createTileGame, moveTiles, shuffleTiles, isGameComplete } from './types/TileGame';
+import { getLeaderboard, addLeaderboardEntry, clearLeaderboard, LeaderboardData, LeaderboardEntry } from './types/Leaderboard';
+import { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Image, Dimensions, Animated } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { createTileGame, moveTiles, shuffleTiles, isGameComplete } from './types/TileGame';
@@ -23,6 +28,10 @@ export default function App() {
   const [moves, setMoves] = useState(0);
   const [gameActive, setGameActive] = useState(false);
   const [gameComplete, setGameComplete] = useState(false);
+  const [showNameInput, setShowNameInput] = useState(false);
+  const [playerName, setPlayerName] = useState('');
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardData>({ easy: [], normal: [], hard: [], ultra: [] });
   const animatedValues = useRef<Map<number, { x: Animated.Value; y: Animated.Value }>>(new Map());
   
   const screenDimensions = Dimensions.get('window');
@@ -39,6 +48,15 @@ export default function App() {
       case 'ultra': return 6;
     }
   };
+  
+  const loadLeaderboard = async () => {
+    const data = await getLeaderboard();
+    setLeaderboard(data);
+  };
+  
+  useEffect(() => {
+    loadLeaderboard();
+  }, []);
   
   useEffect(() => {
     const size = getDifficultySize(difficulty);
@@ -109,6 +127,7 @@ export default function App() {
         setGameComplete(true);
         setGameActive(false);
         setGameStarted(false);
+        setShowNameInput(true);
       }
     }
   };
@@ -133,6 +152,88 @@ export default function App() {
     setGameComplete(false);
   };
   
+  const submitScore = async () => {
+    if (playerName.trim().length === 0) {
+      Alert.alert('Error', 'Please enter your name');
+      return;
+    }
+    
+    const entry: LeaderboardEntry = {
+      name: playerName.trim().substring(0, 8),
+      time: timer,
+      moves,
+      difficulty,
+      date: new Date().toISOString()
+    };
+    
+    await addLeaderboardEntry(entry);
+    await loadLeaderboard();
+    setShowNameInput(false);
+    setPlayerName('');
+  };
+  
+  const clearAllData = () => {
+    console.log('Clear button clicked');
+    
+    // Use window.confirm for web compatibility
+    if (typeof window !== 'undefined' && window.confirm) {
+      const confirmed = window.confirm('Are you sure you want to delete all leaderboard data? This action cannot be undone.');
+      if (confirmed) {
+        performClear();
+      }
+    } else {
+      Alert.alert(
+        'Clear All Data',
+        'Are you sure you want to delete all leaderboard data? This action cannot be undone.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete All',
+            style: 'destructive',
+            onPress: performClear
+          }
+        ]
+      );
+    }
+  };
+  
+  const performClear = async () => {
+    try {
+      console.log('Clearing leaderboard...');
+      await clearLeaderboard();
+      setLeaderboard({ easy: [], normal: [], hard: [], ultra: [] });
+      console.log('Leaderboard cleared successfully');
+      
+      if (typeof window !== 'undefined' && window.alert) {
+        window.alert('All leaderboard data has been cleared.');
+      } else {
+        Alert.alert('Success', 'All leaderboard data has been cleared.');
+      }
+    } catch (error) {
+      console.error('Error clearing leaderboard:', error);
+      
+      if (typeof window !== 'undefined' && window.alert) {
+        window.alert('Failed to clear data.');
+      } else {
+        Alert.alert('Error', 'Failed to clear data.');
+      }
+    }
+  };
+  
+  const solvePuzzle = () => {
+    const solvedTiles = gameState.tiles.map(tile => ({
+      ...tile,
+      position: { ...tile.originalPosition }
+    }));
+    
+    const solvedState = { ...gameState, tiles: solvedTiles };
+    setGameState(solvedState);
+    setGameComplete(true);
+    setGameActive(false);
+    setGameStarted(false);
+    setShowNameInput(true);
+  };
+  
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -155,9 +256,17 @@ export default function App() {
           <Picker.Item label="Ultra (6x6)" value="ultra" />
         </Picker>
       </View>
-      <TouchableOpacity style={styles.startButton} onPress={startGame}>
-        <Text style={styles.startButtonText}>Start Game</Text>
+      <TouchableOpacity style={styles.leaderboardButton} onPress={() => setShowLeaderboard(true)}>
+        <Text style={styles.startButtonText}>Leaderboard</Text>
       </TouchableOpacity>
+      <View style={styles.buttonRow}>
+        <TouchableOpacity style={styles.startButton} onPress={startGame}>
+          <Text style={styles.startButtonText}>Start Game</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.solveButton} onPress={solvePuzzle}>
+          <Text style={styles.startButtonText}>Solve</Text>
+        </TouchableOpacity>
+      </View>
       <Text style={styles.timer}>Time: {formatTime(timer)} | Moves: {moves}</Text>
       <View style={[styles.gameBoard, { width: boardSize, height: boardSize }]}>
         {gameComplete ? (
@@ -221,6 +330,69 @@ export default function App() {
           })
         )}
       </View>
+      
+      {/* Name Input Modal */}
+      <Modal visible={showNameInput} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Congratulations!</Text>
+            <Text style={styles.modalSubtitle}>Time: {formatTime(timer)} | Moves: {moves}</Text>
+            <TextInput
+              style={styles.nameInput}
+              placeholder="Enter your name (max 8 chars)"
+              value={playerName}
+              onChangeText={setPlayerName}
+              maxLength={8}
+              autoCapitalize="characters"
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={styles.modalButton} onPress={submitScore}>
+                <Text style={styles.modalButtonText}>Submit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalButton, styles.skipButton]} onPress={() => setShowNameInput(false)}>
+                <Text style={styles.modalButtonText}>Skip</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      
+      {/* Leaderboard Modal */}
+      <Modal visible={showLeaderboard} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.leaderboardModal}>
+            <Text style={styles.modalTitle}>Leaderboard</Text>
+            <ScrollView style={styles.leaderboardScroll}>
+              {(['easy', 'normal', 'hard', 'ultra'] as const).map(diff => (
+                <View key={diff} style={styles.difficultySection}>
+                  <Text style={styles.difficultyTitle}>{diff.toUpperCase()}</Text>
+                  {leaderboard[diff].length === 0 ? (
+                    <Text style={styles.noEntries}>No entries yet</Text>
+                  ) : (
+                    leaderboard[diff].map((entry, index) => (
+                      <View key={index} style={styles.leaderboardEntry}>
+                        <Text style={styles.rank}>{index + 1}</Text>
+                        <Text style={styles.entryName}>{entry.name}</Text>
+                        <Text style={styles.entryMoves}>{entry.moves}m</Text>
+                        <Text style={styles.entryTime}>{formatTime(entry.time)}</Text>
+                      </View>
+                    ))
+                  )}
+                </View>
+              ))}
+            </ScrollView>
+            <View style={styles.leaderboardButtons}>
+              <TouchableOpacity style={styles.clearButton} onPress={clearAllData}>
+                <Text style={styles.modalButtonText}>Clear All Data</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.closeButton} onPress={() => setShowLeaderboard(false)}>
+                <Text style={styles.modalButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      
       <StatusBar style="auto" />
     </View>
   );
@@ -266,6 +438,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  leaderboardButton: {
+    backgroundColor: '#7b1e7a',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 10,
+  },
+  solveButton: {
+    backgroundColor: '#f9564f',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 5,
+  },
   timer: {
     fontSize: 18,
     marginBottom: 20,
@@ -298,5 +488,128 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: 'white',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#f3c677',
+    padding: 20,
+    borderRadius: 10,
+    width: '80%',
+    alignItems: 'center',
+  },
+  leaderboardModal: {
+    backgroundColor: '#f3c677',
+    padding: 20,
+    borderRadius: 10,
+    width: '90%',
+    maxHeight: '80%',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#0c0a3e',
+    marginBottom: 10,
+  },
+  modalSubtitle: {
+    fontSize: 16,
+    color: '#7b1e7a',
+    marginBottom: 15,
+  },
+  nameInput: {
+    borderWidth: 1,
+    borderColor: '#0c0a3e',
+    padding: 10,
+    borderRadius: 5,
+    width: '100%',
+    marginBottom: 15,
+    backgroundColor: 'white',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  modalButton: {
+    backgroundColor: '#b33f62',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 5,
+  },
+  skipButton: {
+    backgroundColor: '#7b1e7a',
+  },
+  modalButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  leaderboardScroll: {
+    maxHeight: 400,
+  },
+  difficultySection: {
+    marginBottom: 20,
+  },
+  difficultyTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#0c0a3e',
+    marginBottom: 10,
+  },
+  noEntries: {
+    color: '#7b1e7a',
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
+  leaderboardEntry: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: '#0c0a3e20',
+  },
+  rank: {
+    width: 30,
+    fontWeight: 'bold',
+    color: '#0c0a3e',
+  },
+  entryName: {
+    flex: 1,
+    color: '#0c0a3e',
+    fontWeight: 'bold',
+  },
+  entryMoves: {
+    width: 40,
+    textAlign: 'right',
+    color: '#7b1e7a',
+  },
+  entryTime: {
+    width: 60,
+    textAlign: 'right',
+    color: '#7b1e7a',
+  },
+  closeButton: {
+    backgroundColor: '#b33f62',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 5,
+    flex: 1,
+    alignItems: 'center',
+  },
+  leaderboardButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    gap: 10,
+  },
+  clearButton: {
+    backgroundColor: '#f9564f',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 5,
+    flex: 2,
+    alignItems: 'center',
   },
 });
