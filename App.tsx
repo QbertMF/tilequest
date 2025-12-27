@@ -1,8 +1,8 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TouchableOpacity, Image, Dimensions } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Image, Dimensions, Animated } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { createTileGame, moveTiles, shuffleTiles, isGameComplete } from './types/TileGame';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 type Difficulty = 'easy' | 'normal' | 'hard' | 'ultra';
 
@@ -23,6 +23,7 @@ export default function App() {
   const [moves, setMoves] = useState(0);
   const [gameActive, setGameActive] = useState(false);
   const [gameComplete, setGameComplete] = useState(false);
+  const animatedValues = useRef<Map<number, { x: Animated.Value; y: Animated.Value }>>(new Map());
   
   const screenDimensions = Dimensions.get('window');
   const headerHeight = 150; // Approximate height for title, difficulty, button, and timer
@@ -42,12 +43,22 @@ export default function App() {
   useEffect(() => {
     const size = getDifficultySize(difficulty);
     const selectedImage = images[Math.floor(Math.random() * images.length)];
-    setGameState(createTileGame(size, size, selectedImage));
+    const newGameState = createTileGame(size, size, selectedImage);
+    setGameState(newGameState);
     setTimer(0);
     setGameStarted(false);
     setMoves(0);
     setGameActive(false);
-  }, [difficulty]);
+    
+    // Initialize animated values for new tiles
+    animatedValues.current.clear();
+    newGameState.tiles.forEach(tile => {
+      animatedValues.current.set(tile.id, {
+        x: new Animated.Value(tile.position.col * tileSize),
+        y: new Animated.Value(tile.position.row * tileSize)
+      });
+    });
+  }, [difficulty, tileSize]);
   
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -68,6 +79,30 @@ export default function App() {
         setGameStarted(true);
       }
       setMoves(prev => prev + 1);
+      
+      // Animate tiles to new positions
+      const animations = newGameState.tiles
+        .map(tile => {
+          const animatedValue = animatedValues.current.get(tile.id);
+          if (animatedValue) {
+            return Animated.parallel([
+              Animated.timing(animatedValue.x, {
+                toValue: tile.position.col * tileSize,
+                duration: 200,
+                useNativeDriver: false
+              }),
+              Animated.timing(animatedValue.y, {
+                toValue: tile.position.row * tileSize,
+                duration: 200,
+                useNativeDriver: false
+              })
+            ]);
+          }
+          return null;
+        })
+        .filter((anim): anim is Animated.CompositeAnimation => anim !== null);
+      
+      Animated.parallel(animations).start();
       setGameState(newGameState);
       
       if (isGameComplete(newGameState)) {
@@ -79,7 +114,18 @@ export default function App() {
   };
   
   const startGame = () => {
-    setGameState(prevState => shuffleTiles(prevState));
+    const shuffledState = shuffleTiles(gameState);
+    setGameState(shuffledState);
+    
+    // Update animated values to match shuffled positions without animation
+    shuffledState.tiles.forEach(tile => {
+      const animatedValue = animatedValues.current.get(tile.id);
+      if (animatedValue) {
+        animatedValue.x.setValue(tile.position.col * tileSize);
+        animatedValue.y.setValue(tile.position.row * tileSize);
+      }
+    });
+    
     setTimer(0);
     setGameStarted(false);
     setMoves(0);
@@ -95,7 +141,7 @@ export default function App() {
   
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Teo's Sliding Tile Game</Text>
+      <Text style={styles.title}>Teo's Tile Quest</Text>
       <View style={styles.difficultyContainer}>
         <Text style={styles.difficultyLabel}>Difficulty:</Text>
         <Picker
@@ -123,22 +169,35 @@ export default function App() {
             }}
           />
         ) : (
-          gameState.tiles.map(tile => (
-            <TouchableOpacity
-              key={tile.id}
-              style={[
-                styles.tile,
-                {
-                  left: tile.position.col * tileSize,
-                  top: tile.position.row * tileSize,
-                  width: tileSize,
-                  height: tileSize,
-                  backgroundColor: tile.value ? 'transparent' : '#f0f0f0'
-                }
-              ]}
-              onPress={() => handleTileClick(tile.id)}
-              disabled={!tile.value || !gameActive}
-            >
+          gameState.tiles.map(tile => {
+            const animatedValue = animatedValues.current.get(tile.id);
+            if (!animatedValue) {
+              animatedValues.current.set(tile.id, {
+                x: new Animated.Value(tile.position.col * tileSize),
+                y: new Animated.Value(tile.position.row * tileSize)
+              });
+            }
+            const currentAnimatedValue = animatedValues.current.get(tile.id)!;
+            
+            return (
+              <Animated.View
+                key={tile.id}
+                style={[
+                  styles.tile,
+                  {
+                    left: currentAnimatedValue.x,
+                    top: currentAnimatedValue.y,
+                    width: tileSize,
+                    height: tileSize,
+                    backgroundColor: tile.value ? 'transparent' : '#f0f0f0'
+                  }
+                ]}
+              >
+                <TouchableOpacity
+                  style={{ width: '100%', height: '100%' }}
+                  onPress={() => handleTileClick(tile.id)}
+                  disabled={!tile.value || !gameActive}
+                >
               {tile.value && (
                 <>
                   <Image
@@ -156,8 +215,10 @@ export default function App() {
                   {difficulty !== 'ultra' && <Text style={styles.tileNumber}>{tile.value}</Text>}
                 </>
               )}
-            </TouchableOpacity>
-          ))
+                </TouchableOpacity>
+              </Animated.View>
+            );
+          })
         )}
       </View>
       <StatusBar style="auto" />
