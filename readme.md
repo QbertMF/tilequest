@@ -11,6 +11,12 @@ npx expo start -c --tunnel
 -c is probably optional
 --tunnel seems required on the PC used 
 
+## build
+npx expo install --check
+eas login
+eas build:configure
+eas build --platform android --profile preview
+
 # color palette
 - CSV
 
