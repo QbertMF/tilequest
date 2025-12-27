@@ -52,9 +52,9 @@ eas build --platform android --profile preview
 ## Random shuffle
 Do not shuffle randomly. Only shuffle using valid moves.
 Then there is no need to check if the result is solvable.
-## Animation
-Apply animation for the tiles shifing on the grid
-## Numbers
-Create setting for omitting the numbers
-## Center image
-Center and possibly strethc the image
+## more images
+Provide the option to select local picture for the puzzle
+Provide additionally AI generated pictures
+provide a button to select random image
+## AI Review
+Get the AI to review the code (Use Copilot)
