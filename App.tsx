@@ -1,12 +1,8 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TouchableOpacity, Image, Dimensions, Modal, TextInput, ScrollView, Alert } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
+import { StyleSheet, Text, View, TouchableOpacity, Image, Dimensions, Modal, TextInput, ScrollView, Alert, Animated } from 'react-native';
 import { createTileGame, moveTiles, shuffleTiles, isGameComplete } from './types/TileGame';
 import { getLeaderboard, addLeaderboardEntry, clearLeaderboard, LeaderboardData, LeaderboardEntry } from './types/Leaderboard';
-import { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Image, Dimensions, Animated } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { createTileGame, moveTiles, shuffleTiles, isGameComplete } from './types/TileGame';
 import { useState, useEffect, useRef } from 'react';
 
 type Difficulty = 'easy' | 'normal' | 'hard' | 'ultra';
