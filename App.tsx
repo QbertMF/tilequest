@@ -42,6 +42,7 @@ export default function App() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardData>({ easy: [], normal: [], hard: [], ultra: [] });
   const [titleClickCount, setTitleClickCount] = useState(0);
   const [showSolveButton, setShowSolveButton] = useState(false);
+  const [showNumbers, setShowNumbers] = useState(true);
   const animatedValues = useRef<Map<number, { x: Animated.Value; y: Animated.Value }>>(new Map());
   
   const screenDimensions = Dimensions.get('window');
@@ -360,7 +361,7 @@ export default function App() {
                       }
                     ]}
                   />
-                  {difficulty !== 'ultra' && <Text style={styles.tileNumber}>{tile.value}</Text>}
+                  {showNumbers && <Text style={styles.tileNumber}>{tile.value}</Text>}
                 </>
               )}
                 </TouchableOpacity>
@@ -385,6 +386,16 @@ export default function App() {
           disabled={gameActive}
         >
           <MaterialIcons name="shuffle" size={24} color={gameActive ? '#999' : '#0c0a3e'} />
+        </TouchableOpacity>
+        
+        <View style={styles.spacer} />
+        
+        <TouchableOpacity 
+          style={[styles.numbersToggleButton, gameActive && styles.disabledButton]} 
+          onPress={() => setShowNumbers(!showNumbers)}
+          disabled={gameActive}
+        >
+          <MaterialIcons name="numbers" size={24} color={gameActive ? '#999' : (showNumbers ? '#0c0a3e' : '#999')} />
         </TouchableOpacity>
         
         {showSolveButton && (
@@ -544,6 +555,16 @@ const styles = StyleSheet.create({
     gap: 15,
     marginTop: 10,
     alignSelf: 'center',
+  },
+  numbersToggleButton: {
+    backgroundColor: '#f3c677',
+    padding: 10,
+    borderRadius: 25,
+    borderWidth: 2,
+    borderColor: '#0c0a3e',
+  },
+  spacer: {
+    width: 30,
   },
   disabledButton: {
     backgroundColor: '#e0e0e0',
