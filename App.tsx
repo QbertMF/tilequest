@@ -3,6 +3,8 @@ import { StyleSheet, Text, View, TouchableOpacity, Image, Dimensions, Modal, Tex
 import { createTileGame, moveTiles, shuffleTiles, isGameComplete } from './types/TileGame';
 import { getLeaderboard, addLeaderboardEntry, clearLeaderboard, LeaderboardData, LeaderboardEntry } from './types/Leaderboard';
 import { Picker } from '@react-native-picker/picker';
+import { MaterialIcons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useState, useEffect, useRef } from 'react';
 
 type Difficulty = 'easy' | 'normal' | 'hard' | 'ultra';
@@ -240,6 +242,28 @@ export default function App() {
     setShowNameInput(true);
   };
   
+  const selectRandomImage = () => {
+    const currentImageIndex = images.findIndex(img => img === gameState.selectedImage);
+    const availableImages = images.filter((_, index) => index !== currentImageIndex);
+    const randomImage = availableImages[Math.floor(Math.random() * availableImages.length)];
+    const newGameState = { ...gameState, selectedImage: randomImage };
+    setGameState(newGameState);
+  };
+  
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const newGameState = { ...gameState, selectedImage: { uri: result.assets[0].uri } };
+      setGameState(newGameState);
+    }
+  };
+  
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -332,6 +356,24 @@ export default function App() {
             );
           })
         )}
+      </View>
+      
+      <View style={styles.imageButtonRow}>
+        <TouchableOpacity 
+          style={[styles.imagePickerButton, gameActive && styles.disabledButton]} 
+          onPress={pickImage}
+          disabled={gameActive}
+        >
+          <MaterialIcons name="photo" size={24} color={gameActive ? '#999' : '#0c0a3e'} />
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.imagePickerButton, gameActive && styles.disabledButton]} 
+          onPress={selectRandomImage}
+          disabled={gameActive}
+        >
+          <MaterialIcons name="shuffle" size={24} color={gameActive ? '#999' : '#0c0a3e'} />
+        </TouchableOpacity>
       </View>
       
       {showSolveButton && (
@@ -466,6 +508,23 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginTop: 10,
     alignSelf: 'center',
+  },
+  imagePickerButton: {
+    backgroundColor: '#f3c677',
+    padding: 10,
+    borderRadius: 25,
+    borderWidth: 2,
+    borderColor: '#0c0a3e',
+  },
+  imageButtonRow: {
+    flexDirection: 'row',
+    gap: 15,
+    marginTop: 10,
+    alignSelf: 'center',
+  },
+  disabledButton: {
+    backgroundColor: '#e0e0e0',
+    borderColor: '#999',
   },
   timer: {
     fontSize: 18,
