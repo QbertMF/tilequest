@@ -288,12 +288,14 @@ export default function App() {
           <Picker.Item label="Ultra (6x6)" value="ultra" />
         </Picker>
       </View>
-      <TouchableOpacity style={styles.leaderboardButton} onPress={() => setShowLeaderboard(true)}>
-        <Text style={styles.startButtonText}>Leaderboard</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.startButton} onPress={startGame}>
-        <Text style={styles.startButtonText}>Start Game</Text>
-      </TouchableOpacity>
+      <View style={styles.mainButtonRow}>
+        <TouchableOpacity style={styles.startButton} onPress={startGame}>
+          <Text style={styles.startButtonText}>Start</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.scoresButton} onPress={() => setShowLeaderboard(true)}>
+          <Text style={styles.startButtonText}>Scores</Text>
+        </TouchableOpacity>
+      </View>
       <Text style={styles.timer}>Time: {formatTime(timer)} | Moves: {moves}</Text>
       <View style={[styles.gameBoard, { width: boardSize, height: boardSize }]}>
         {gameComplete ? (
@@ -374,13 +376,16 @@ export default function App() {
         >
           <MaterialIcons name="shuffle" size={24} color={gameActive ? '#999' : '#0c0a3e'} />
         </TouchableOpacity>
+        
+        {showSolveButton && (
+          <TouchableOpacity 
+            style={styles.imagePickerButton} 
+            onPress={solvePuzzle}
+          >
+            <MaterialIcons name="help-circle-outline" size={24} color="#0c0a3e" />
+          </TouchableOpacity>
+        )}
       </View>
-      
-      {showSolveButton && (
-        <TouchableOpacity style={styles.hiddenSolveButton} onPress={solvePuzzle}>
-          <Text style={styles.startButtonText}>Solve</Text>
-        </TouchableOpacity>
-      )}
       
       {/* Name Input Modal */}
       <Modal visible={showNameInput} transparent animationType="slide">
@@ -479,22 +484,30 @@ const styles = StyleSheet.create({
   },
   startButton: {
     backgroundColor: '#b33f62',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
     borderRadius: 5,
-    marginBottom: 10,
+    flex: 1,
+    alignItems: 'center',
+  },
+  scoresButton: {
+    backgroundColor: '#7b1e7a',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 5,
+    flex: 1,
+    alignItems: 'center',
   },
   startButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  leaderboardButton: {
-    backgroundColor: '#7b1e7a',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 5,
+  mainButtonRow: {
+    flexDirection: 'row',
+    gap: 10,
     marginBottom: 10,
+    width: '60%',
   },
   buttonRow: {
     flexDirection: 'row',
