@@ -10,9 +10,19 @@ import { useState, useEffect, useRef } from 'react';
 type Difficulty = 'easy' | 'normal' | 'hard' | 'ultra';
 
 const images = [
-  require('./assets/truck1.png'),
-  require('./assets/truck2.png'),
-  require('./assets/truck3.png'),
+  require('./assets/images/truck1.png'),
+  require('./assets/images/truck2.png'),
+  require('./assets/images/truck3.png'),
+  require('./assets/images/monster_truck1.png'),
+  require('./assets/images/monster_truck2.png'),
+  require('./assets/images/abstract1.png'),
+  require('./assets/images/abstract2.png'),
+  require('./assets/images/blocks1.png'),
+  require('./assets/images/cottage.png'),
+  require('./assets/images/csify_city.png'),
+  require('./assets/images/flake.png'),
+  require('./assets/images/nature1.png'),
+  require('./assets/images/teddy1.png'),
 ];
 
 export default function App() {
