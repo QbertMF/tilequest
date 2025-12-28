@@ -28,6 +28,8 @@ export default function App() {
   const [playerName, setPlayerName] = useState('');
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardData>({ easy: [], normal: [], hard: [], ultra: [] });
+  const [titleClickCount, setTitleClickCount] = useState(0);
+  const [showSolveButton, setShowSolveButton] = useState(false);
   const animatedValues = useRef<Map<number, { x: Animated.Value; y: Animated.Value }>>(new Map());
   
   const screenDimensions = Dimensions.get('window');
@@ -83,6 +85,14 @@ export default function App() {
     }
     return () => clearInterval(interval);
   }, [gameStarted, gameComplete]);
+  
+  const handleTitleClick = () => {
+    const newCount = titleClickCount + 1;
+    setTitleClickCount(newCount);
+    if (newCount >= 7) {
+      setShowSolveButton(true);
+    }
+  };
   
   const handleTileClick = (tileId: number) => {
     if (!gameActive || gameComplete) return;
@@ -238,7 +248,9 @@ export default function App() {
   
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Teo's Tile Quest</Text>
+      <TouchableOpacity onPress={handleTitleClick}>
+        <Text style={styles.title}>Teo's Tile Quest</Text>
+      </TouchableOpacity>
       <View style={styles.difficultyContainer}>
         <Text style={styles.difficultyLabel}>Difficulty:</Text>
         <Picker
@@ -255,14 +267,9 @@ export default function App() {
       <TouchableOpacity style={styles.leaderboardButton} onPress={() => setShowLeaderboard(true)}>
         <Text style={styles.startButtonText}>Leaderboard</Text>
       </TouchableOpacity>
-      <View style={styles.buttonRow}>
-        <TouchableOpacity style={styles.startButton} onPress={startGame}>
-          <Text style={styles.startButtonText}>Start Game</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.solveButton} onPress={solvePuzzle}>
-          <Text style={styles.startButtonText}>Solve</Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity style={styles.startButton} onPress={startGame}>
+        <Text style={styles.startButtonText}>Start Game</Text>
+      </TouchableOpacity>
       <Text style={styles.timer}>Time: {formatTime(timer)} | Moves: {moves}</Text>
       <View style={[styles.gameBoard, { width: boardSize, height: boardSize }]}>
         {gameComplete ? (
@@ -326,6 +333,12 @@ export default function App() {
           })
         )}
       </View>
+      
+      {showSolveButton && (
+        <TouchableOpacity style={styles.hiddenSolveButton} onPress={solvePuzzle}>
+          <Text style={styles.startButtonText}>Solve</Text>
+        </TouchableOpacity>
+      )}
       
       {/* Name Input Modal */}
       <Modal visible={showNameInput} transparent animationType="slide">
@@ -446,11 +459,13 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 10,
   },
-  solveButton: {
+  hiddenSolveButton: {
     backgroundColor: '#f9564f',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 5,
+    marginTop: 10,
+    alignSelf: 'center',
   },
   timer: {
     fontSize: 18,
