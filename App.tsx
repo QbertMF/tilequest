@@ -61,7 +61,9 @@ export default function App() {
   };
   
   const loadLeaderboard = async () => {
+    console.log('Loading leaderboard...');
     const data = await getLeaderboard();
+    console.log('Loaded leaderboard data:', data);
     setLeaderboard(data);
   };
   
