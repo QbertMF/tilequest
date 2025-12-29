@@ -4,15 +4,13 @@ export interface LeaderboardEntry {
   name: string;
   time: number; // seconds
   moves: number;
-  difficulty: 'easy' | 'normal' | 'hard' | 'ultra';
+  gridSize: number; // total tiles (e.g., 9 for 3x3, 16 for 4x4)
+  numbersShown: boolean;
   date: string;
 }
 
 export interface LeaderboardData {
-  easy: LeaderboardEntry[];
-  normal: LeaderboardEntry[];
-  hard: LeaderboardEntry[];
-  ultra: LeaderboardEntry[];
+  entries: LeaderboardEntry[];
 }
 
 const LEADERBOARD_KEY = 'tilequest_leaderboard';
@@ -20,25 +18,45 @@ const LEADERBOARD_KEY = 'tilequest_leaderboard';
 export async function getLeaderboard(): Promise<LeaderboardData> {
   try {
     const data = await AsyncStorage.getItem(LEADERBOARD_KEY);
-    return data ? JSON.parse(data) : { easy: [], normal: [], hard: [], ultra: [] };
+    return data ? JSON.parse(data) : { entries: [] };
   } catch {
-    return { easy: [], normal: [], hard: [], ultra: [] };
+    return { entries: [] };
   }
 }
 
 export async function addLeaderboardEntry(entry: LeaderboardEntry): Promise<void> {
   try {
     const leaderboard = await getLeaderboard();
-    leaderboard[entry.difficulty].push(entry);
+    leaderboard.entries.push(entry);
     
-    // Sort by moves first, then by time
-    leaderboard[entry.difficulty].sort((a, b) => {
-      if (a.moves !== b.moves) return a.moves - b.moves;
-      return a.time - b.time;
+    // Sort by: gridSize (desc), numbersShown (asc), time (asc), moves (asc)
+    leaderboard.entries.sort((a, b) => {
+      if (a.gridSize !== b.gridSize) return b.gridSize - a.gridSize;
+      if (a.numbersShown !== b.numbersShown) return a.numbersShown ? 1 : -1;
+      if (a.time !== b.time) return a.time - b.time;
+      return a.moves - b.moves;
     });
     
-    // Keep only top 10
-    leaderboard[entry.difficulty] = leaderboard[entry.difficulty].slice(0, 10);
+    // Keep only top 10 entries per configuration (gridSize + numbersShown)
+    const configGroups = new Map<string, LeaderboardEntry[]>();
+    leaderboard.entries.forEach(entry => {
+      const key = `${entry.gridSize}-${entry.numbersShown}`;
+      if (!configGroups.has(key)) configGroups.set(key, []);
+      configGroups.get(key)!.push(entry);
+    });
+    
+    leaderboard.entries = [];
+    configGroups.forEach(entries => {
+      leaderboard.entries.push(...entries.slice(0, 10));
+    });
+    
+    // Final sort for display
+    leaderboard.entries.sort((a, b) => {
+      if (a.gridSize !== b.gridSize) return b.gridSize - a.gridSize;
+      if (a.numbersShown !== b.numbersShown) return a.numbersShown ? 1 : -1;
+      if (a.time !== b.time) return a.time - b.time;
+      return a.moves - b.moves;
+    });
     
     await AsyncStorage.setItem(LEADERBOARD_KEY, JSON.stringify(leaderboard));
   } catch (error) {

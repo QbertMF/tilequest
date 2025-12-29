@@ -6,6 +6,7 @@ import { Picker } from '@react-native-picker/picker';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useState, useEffect, useRef } from 'react';
+import Constants from 'expo-constants';
 
 type Difficulty = 'easy' | 'normal' | 'hard' | 'ultra';
 
@@ -39,7 +40,7 @@ export default function App() {
   const [showNameInput, setShowNameInput] = useState(false);
   const [playerName, setPlayerName] = useState('');
   const [showLeaderboard, setShowLeaderboard] = useState(false);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardData>({ easy: [], normal: [], hard: [], ultra: [] });
+  const [leaderboard, setLeaderboard] = useState<LeaderboardData>({ entries: [] });
   const [titleClickCount, setTitleClickCount] = useState(0);
   const [showSolveButton, setShowSolveButton] = useState(false);
   const [showNumbers, setShowNumbers] = useState(true);
@@ -58,6 +59,17 @@ export default function App() {
       case 'hard': return 5;
       case 'ultra': return 6;
     }
+  };
+  
+  const isScoreQualified = (currentTime: number, currentMoves: number, currentGridSize: number, currentNumbersShown: boolean) => {
+    const sameConfigEntries = leaderboard.entries.filter(entry => 
+      entry.gridSize === currentGridSize && entry.numbersShown === currentNumbersShown
+    );
+    
+    if (sameConfigEntries.length < 10) return true;
+    
+    const worstEntry = sameConfigEntries[sameConfigEntries.length - 1];
+    return currentTime < worstEntry.time || (currentTime === worstEntry.time && currentMoves < worstEntry.moves);
   };
   
   const loadLeaderboard = async () => {
@@ -146,7 +158,11 @@ export default function App() {
         setGameComplete(true);
         setGameActive(false);
         setGameStarted(false);
-        setShowNameInput(true);
+        
+        const currentGridSize = gameState.size.rows * gameState.size.cols;
+        if (isScoreQualified(timer, moves + 1, currentGridSize, showNumbers)) {
+          setShowNameInput(true);
+        }
       }
     }
   };
@@ -181,7 +197,8 @@ export default function App() {
       name: playerName.trim().substring(0, 8),
       time: timer,
       moves,
-      difficulty,
+      gridSize: gameState.size.rows * gameState.size.cols,
+      numbersShown: showNumbers,
       date: new Date().toISOString()
     };
     
@@ -189,6 +206,7 @@ export default function App() {
     await loadLeaderboard();
     setShowNameInput(false);
     setPlayerName('');
+    setShowLeaderboard(true);
   };
   
   const clearAllData = () => {
@@ -220,7 +238,7 @@ export default function App() {
     try {
       console.log('Clearing leaderboard...');
       await clearLeaderboard();
-      setLeaderboard({ easy: [], normal: [], hard: [], ultra: [] });
+      setLeaderboard({ entries: [] });
       console.log('Leaderboard cleared successfully');
       
       if (typeof window !== 'undefined' && window.alert) {
@@ -250,7 +268,11 @@ export default function App() {
     setGameComplete(true);
     setGameActive(false);
     setGameStarted(false);
-    setShowNameInput(true);
+    
+    const currentGridSize = gameState.size.rows * gameState.size.cols;
+    if (isScoreQualified(timer, moves, currentGridSize, showNumbers)) {
+      setShowNameInput(true);
+    }
   };
   
   const selectRandomImage = () => {
@@ -403,9 +425,11 @@ export default function App() {
             style={styles.imagePickerButton} 
             onPress={solvePuzzle}
           >
-            <MaterialIcons name="help-circle-outline" size={24} color="#0c0a3e" />
+            <MaterialIcons name="help" size={24} color="#0c0a3e" />
           </TouchableOpacity>
         )}
+        
+        <Text style={styles.versionText}>V{Constants.expoConfig?.version}</Text>
       </View>
       
       {/* Name Input Modal */}
@@ -440,23 +464,20 @@ export default function App() {
           <View style={styles.leaderboardModal}>
             <Text style={styles.modalTitle}>Leaderboard</Text>
             <ScrollView style={styles.leaderboardScroll}>
-              {(['easy', 'normal', 'hard', 'ultra'] as const).map(diff => (
-                <View key={diff} style={styles.difficultySection}>
-                  <Text style={styles.difficultyTitle}>{diff.toUpperCase()}</Text>
-                  {leaderboard[diff].length === 0 ? (
-                    <Text style={styles.noEntries}>No entries yet</Text>
-                  ) : (
-                    leaderboard[diff].map((entry, index) => (
-                      <View key={index} style={styles.leaderboardEntry}>
-                        <Text style={styles.rank}>{index + 1}</Text>
-                        <Text style={styles.entryName}>{entry.name}</Text>
-                        <Text style={styles.entryMoves}>{entry.moves}m</Text>
-                        <Text style={styles.entryTime}>{formatTime(entry.time)}</Text>
-                      </View>
-                    ))
-                  )}
-                </View>
-              ))}
+              {leaderboard.entries.length === 0 ? (
+                <Text style={styles.noEntries}>No entries yet</Text>
+              ) : (
+                leaderboard.entries.map((entry, index) => (
+                  <View key={index} style={styles.leaderboardEntry}>
+                    <Text style={styles.rank}>{index + 1}</Text>
+                    <Text style={styles.entryName}>{entry.name}</Text>
+                    <Text style={styles.entryGrid}>{Math.sqrt(entry.gridSize)}x{Math.sqrt(entry.gridSize)}</Text>
+                    <Text style={styles.entryNumbers}>{entry.numbersShown ? '123' : '---'}</Text>
+                    <Text style={styles.entryMoves}>{entry.moves}m</Text>
+                    <Text style={styles.entryTime}>{formatTime(entry.time)}</Text>
+                  </View>
+                ))
+              )}
             </ScrollView>
             <View style={styles.leaderboardButtons}>
               <TouchableOpacity style={styles.clearButton} onPress={clearAllData}>
@@ -694,13 +715,25 @@ const styles = StyleSheet.create({
     color: '#0c0a3e',
     fontWeight: 'bold',
   },
+  entryGrid: {
+    width: 35,
+    textAlign: 'center',
+    color: '#7b1e7a',
+    fontSize: 12,
+  },
+  entryNumbers: {
+    width: 30,
+    textAlign: 'center',
+    color: '#7b1e7a',
+    fontSize: 12,
+  },
   entryMoves: {
-    width: 40,
+    width: 35,
     textAlign: 'right',
     color: '#7b1e7a',
   },
   entryTime: {
-    width: 60,
+    width: 50,
     textAlign: 'right',
     color: '#7b1e7a',
   },
@@ -725,5 +758,11 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     flex: 2,
     alignItems: 'center',
+  },
+  versionText: {
+    fontSize: 12,
+    color: 'white',
+    alignSelf: 'flex-end',
+    marginLeft: 10,
   },
 });
