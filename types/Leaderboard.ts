@@ -29,34 +29,16 @@ export async function addLeaderboardEntry(entry: LeaderboardEntry): Promise<void
     const leaderboard = await getLeaderboard();
     leaderboard.entries.push(entry);
     
-    // Sort by: gridSize (desc), numbersShown (asc), time (asc), moves (asc)
+    // Sort by: gridSize (desc), numbersShown (asc), moves (asc), time (asc)
     leaderboard.entries.sort((a, b) => {
       if (a.gridSize !== b.gridSize) return b.gridSize - a.gridSize;
       if (a.numbersShown !== b.numbersShown) return a.numbersShown ? 1 : -1;
-      if (a.time !== b.time) return a.time - b.time;
-      return a.moves - b.moves;
+      if (a.moves !== b.moves) return a.moves - b.moves;
+      return a.time - b.time;
     });
     
-    // Keep only top 10 entries per configuration (gridSize + numbersShown)
-    const configGroups = new Map<string, LeaderboardEntry[]>();
-    leaderboard.entries.forEach(entry => {
-      const key = `${entry.gridSize}-${entry.numbersShown}`;
-      if (!configGroups.has(key)) configGroups.set(key, []);
-      configGroups.get(key)!.push(entry);
-    });
-    
-    leaderboard.entries = [];
-    configGroups.forEach(entries => {
-      leaderboard.entries.push(...entries.slice(0, 10));
-    });
-    
-    // Final sort for display
-    leaderboard.entries.sort((a, b) => {
-      if (a.gridSize !== b.gridSize) return b.gridSize - a.gridSize;
-      if (a.numbersShown !== b.numbersShown) return a.numbersShown ? 1 : -1;
-      if (a.time !== b.time) return a.time - b.time;
-      return a.moves - b.moves;
-    });
+    // Keep only top 50 entries
+    leaderboard.entries = leaderboard.entries.slice(0, 50);
     
     await AsyncStorage.setItem(LEADERBOARD_KEY, JSON.stringify(leaderboard));
   } catch (error) {

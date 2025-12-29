@@ -6,7 +6,6 @@ import { Picker } from '@react-native-picker/picker';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useState, useEffect, useRef } from 'react';
-import Constants from 'expo-constants';
 
 type Difficulty = 'easy' | 'normal' | 'hard' | 'ultra';
 
@@ -59,17 +58,6 @@ export default function App() {
       case 'hard': return 5;
       case 'ultra': return 6;
     }
-  };
-  
-  const isScoreQualified = (currentTime: number, currentMoves: number, currentGridSize: number, currentNumbersShown: boolean) => {
-    const sameConfigEntries = leaderboard.entries.filter(entry => 
-      entry.gridSize === currentGridSize && entry.numbersShown === currentNumbersShown
-    );
-    
-    if (sameConfigEntries.length < 10) return true;
-    
-    const worstEntry = sameConfigEntries[sameConfigEntries.length - 1];
-    return currentTime < worstEntry.time || (currentTime === worstEntry.time && currentMoves < worstEntry.moves);
   };
   
   const loadLeaderboard = async () => {
@@ -158,11 +146,7 @@ export default function App() {
         setGameComplete(true);
         setGameActive(false);
         setGameStarted(false);
-        
-        const currentGridSize = gameState.size.rows * gameState.size.cols;
-        if (isScoreQualified(timer, moves + 1, currentGridSize, showNumbers)) {
-          setShowNameInput(true);
-        }
+        setShowNameInput(true);
       }
     }
   };
@@ -268,11 +252,7 @@ export default function App() {
     setGameComplete(true);
     setGameActive(false);
     setGameStarted(false);
-    
-    const currentGridSize = gameState.size.rows * gameState.size.cols;
-    if (isScoreQualified(timer, moves, currentGridSize, showNumbers)) {
-      setShowNameInput(true);
-    }
+    setShowNameInput(true);
   };
   
   const selectRandomImage = () => {
@@ -428,8 +408,6 @@ export default function App() {
             <MaterialIcons name="help" size={24} color="#0c0a3e" />
           </TouchableOpacity>
         )}
-        
-        <Text style={styles.versionText}>V{Constants.expoConfig?.version}</Text>
       </View>
       
       {/* Name Input Modal */}
@@ -758,11 +736,5 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     flex: 2,
     alignItems: 'center',
-  },
-  versionText: {
-    fontSize: 12,
-    color: 'white',
-    alignSelf: 'flex-end',
-    marginLeft: 10,
   },
 });
