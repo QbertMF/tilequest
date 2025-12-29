@@ -442,10 +442,10 @@ export default function App() {
           <View style={styles.leaderboardModal}>
             <Text style={styles.modalTitle}>Leaderboard</Text>
             <ScrollView style={styles.leaderboardScroll}>
-              {leaderboard?.entries?.length === 0 ? (
+              {!leaderboard?.entries || leaderboard.entries.length === 0 ? (
                 <Text style={styles.noEntries}>No entries yet</Text>
               ) : (
-                leaderboard?.entries?.map((entry, index) => (
+                leaderboard.entries.map((entry, index) => (
                   <View key={index} style={styles.leaderboardEntry}>
                     <Text style={styles.rank}>{index + 1}</Text>
                     <Text style={styles.entryName}>{entry.name}</Text>
